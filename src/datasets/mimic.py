@@ -30,8 +30,8 @@ class Mimic(BaseDataset):
     def __init__(self, dataset_id:str, method_hook:Optional[BaseMethod]=None,**kwargs)->None:
         super().__init__(dataset_id=dataset_id, method_hook=method_hook)
         base_dir = os.getcwd()  
-        self.image_dir = "/home/pathin/tmp_llm/Trust-Medical-LVLM/data/data/physionet.org/files/mimic-cxr-jpg/2.0.0/files"
-        self.anno_dir = "/home/pathin/tmp_llm/Trust-Medical-LVLM/data/data/physionet.org/files/mimic-cxr-jpg/2.0.0/modified_mimic_factuality.json"
+        self.image_dir = "/home/pathin/safety_llm/Trust-Medical-LVLM/data/data/physionet.org/files/mimic-cxr-jpg/2.0.0/files"
+        self.anno_dir = "/home/pathin/safety_llm/Trust-Medical-LVLM/data/data/physionet.org/files/mimic-cxr-jpg/2.0.0/modified_mimic_factuality.json"
         self.annotations = self.load_json(self.anno_dir)
         # self.filter_json()
         self.build_dataset()    
