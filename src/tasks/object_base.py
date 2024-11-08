@@ -57,7 +57,7 @@ class ObjectBaseTask(ABC):
     #     return dataset
     
     def get_dataloader(self) -> DataLoader:
-        dataloader = DataLoader(dataset=self.dataset, batch_size=1, collate_fn=collate_fn)
+        dataloader = DataLoader(dataset=self.dataset, batch_size=1, collate_fn=collate_fn, shuffle=True)
         return dataloader
 
     def eval(self, responses: List[Dict[str, Any]]) -> Dict[str, Union[float, Sequence]]:
@@ -111,7 +111,7 @@ class ObjectBaseTask(ABC):
     def save_results(self, results):
         # Convert the dictionary to a DataFrame
         df = pd.DataFrame.from_dict(results)
-        print('Original df:\n', df)
+        # print('Original df:\n', df)
 
         # Check if 'extra' column contains dictionaries and expand them if so
         if 'content' in df.columns and df['content'].apply(lambda x: isinstance(x, dict)).any():
@@ -125,15 +125,16 @@ class ObjectBaseTask(ABC):
             extra_df = pd.json_normalize(df['extra'])
             df = df.drop(columns=['extra']).join(extra_df)
         
-        print('Expanded df:\n', df)
+        # print('Expanded df:\n', df)
         
         # Save the DataFrame to self.log_file, appending if it already exists
         df.to_csv(self.log_file, index=False)
+        return df
 
     def generate(self, dataloader: DataLoader, **generate_kwargs) -> List[Dict[str, Any]]:
         print('len(self.dataset): ', len(dataloader.dataset))
         responses = []
-        n = 5
+        n = 20
         i = 0
         for batch_data in tqdm(dataloader, total=n):
             for data in batch_data:
@@ -180,11 +181,13 @@ class ObjectBaseTask(ABC):
         
         return responses
         
-    def pipeline(self) -> None:
+    def pipeline(self):
         # self.get_handlers()
         dataloader = self.get_dataloader()
         responses = self.generate(dataloader, **self.generation_kwargs)
         results = self.eval(responses)
-        self.save_results(results)
-        scores = self.scorer(results)
-        self.save_results(scores)
+        result_df = self.save_results(results)
+        # scores = self.scorer(results)
+        # self.save_results(scores)
+
+        return result_df
