@@ -1,5 +1,5 @@
 from src.utils.utils import DictAction, merge_config
-from src.evaluators.metrics import _supported_metrics
+from src.grader.metrics import _supported_metrics
 from src.utils.registry import registry
 from src.tasks.base import BaseTask
 import yaml
