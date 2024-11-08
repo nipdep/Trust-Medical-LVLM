@@ -1,0 +1,11 @@
+model:
+  model_name: 'llava-med-v1.5-7b'
+  # model_path: './playground/model_weights/llava-v1.5-13b'
+  model_path: 'microsoft/llava-med-v1.5-mistral-7b'
+
+parameters:
+  sep: ','
+  temperature: 0
+  top_p: None
+  num_beams: 1
+  max_new_tokens: 512
