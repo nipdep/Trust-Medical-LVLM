@@ -1,0 +1,15 @@
+# ignore cache dir
+__pycache__
+*.log
+
+# ignore large dir
+data/
+physionet.org/
+logs/
+
+# ignore temp dir
+temp 
+
+# ignore secrets 
+.env
+
