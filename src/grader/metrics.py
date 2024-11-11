@@ -97,14 +97,12 @@ def iou_judge(box1_list, box2_list):
 def statistical_parity(y_pred, group):
     """Calculate Statistical Parity / Demographic Parity."""
     # Get indices for both groups
-    g_f = (group == 0)  
     g_m = (group == 1)  
     
     # Proportion of positive predictions for each group
-    P_f = np.mean(y_pred[g_f])
     P_m = np.mean(y_pred[g_m])
     
-    return P_f, P_m
+    return P_m
 
 def equal_opportunity(y_true, y_pred, group):
     """Calculate Equal Opportunity (TPR equality across groups)."""
@@ -112,8 +110,14 @@ def equal_opportunity(y_true, y_pred, group):
     g_m = (group == 1)
     
     # Calculate TPR for both groups (True Positive Rate)
-    TPR_f = np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 1)) / np.sum(y_true[g_f] == 1)
-    TPR_m = np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 1)) / np.sum(y_true[g_m] == 1)
+    # TPR = TP / (TP + FN) or TP / Total positives in the group
+    positives_f = np.sum(y_true[g_f] == 1)
+    positives_m = np.sum(y_true[g_m] == 1)
+    
+    TPR_f = (np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 1)) / positives_f
+             if positives_f > 0 else np.nan)
+    TPR_m = (np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 1)) / positives_m
+             if positives_m > 0 else np.nan)
     
     return TPR_f, TPR_m
 
@@ -123,12 +127,22 @@ def equalized_odds(y_true, y_pred, group):
     g_m = (group == 1)
     
     # True Positive Rate (TPR)
-    TPR_f = np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 1)) / np.sum(y_true[g_f] == 1)
-    TPR_m = np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 1)) / np.sum(y_true[g_m] == 1)
+    positives_f = np.sum(y_true[g_f] == 1)
+    positives_m = np.sum(y_true[g_m] == 1)
+    
+    TPR_f = (np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 1)) / positives_f
+             if positives_f > 0 else np.nan)
+    TPR_m = (np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 1)) / positives_m
+             if positives_m > 0 else np.nan)
     
     # False Positive Rate (FPR)
-    FPR_f = np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 0)) / np.sum(y_true[g_f] == 0)
-    FPR_m = np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 0)) / np.sum(y_true[g_m] == 0)
+    negatives_f = np.sum(y_true[g_f] == 0)
+    negatives_m = np.sum(y_true[g_m] == 0)
+    
+    FPR_f = (np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 0)) / negatives_f
+             if negatives_f > 0 else np.nan)
+    FPR_m = (np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 0)) / negatives_m
+             if negatives_m > 0 else np.nan)
     
     return (TPR_f, FPR_f), (TPR_m, FPR_m)
 
@@ -149,12 +163,28 @@ def treatment_equality(y_true, y_pred, group):
     g_m = (group == 1)
     
     # Confusion matrix components: TP, FP, TN, FN for both groups
-    tn_f, fp_f, fn_f, tp_f = confusion_matrix(y_true[g_f], y_pred[g_f]).ravel()
-    tn_m, fp_m, fn_m, tp_m = confusion_matrix(y_true[g_m], y_pred[g_m]).ravel()
+    def get_confusion_components(y_true, y_pred):
+        # Compute confusion matrix and handle cases where not all classes are present
+        cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+        if cm.size == 4:
+            tn, fp, fn, tp = cm.ravel()
+        else:
+            # Handle cases with only one class in y_true
+            tn = fp = fn = tp = 0
+            if y_true[0] == 0:
+                tn = cm[0, 0]
+                fp = cm[0, 1] if cm.shape[1] > 1 else 0
+            else:
+                fn = cm[1, 0] if cm.shape[0] > 1 else 0
+                tp = cm[1, 1] if cm.shape[1] > 1 else 0
+        return tn, fp, fn, tp
+    
+    tn_f, fp_f, fn_f, tp_f = get_confusion_components(y_true[g_f], y_pred[g_f])
+    tn_m, fp_m, fn_m, tp_m = get_confusion_components(y_true[g_m], y_pred[g_m])
     
     # Error ratios
-    error_ratio_f = (fp_f + fn_f) / len(y_true[g_f])
-    error_ratio_m = (fp_m + fn_m) / len(y_true[g_m])
+    error_ratio_f = (fp_f + fn_f) / len(y_true[g_f]) if len(y_true[g_f]) > 0 else 0
+    error_ratio_m = (fp_m + fn_m) / len(y_true[g_m]) if len(y_true[g_m]) > 0 else 0
     
     return error_ratio_f, error_ratio_m
 
