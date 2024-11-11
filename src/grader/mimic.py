@@ -1,12 +1,13 @@
 import pandas as pd
 from itertools import combinations
-from src.grader.metrics import statistical_parity, generic_t_test, manual_welch_anova
+from src.grader.metrics import *
+
 
 class OpenEndGrader:
     def __init__(self, y_pred, gender, race):
         """
         Initialize with predictions and group labels for gender and race.
-        
+
         Parameters:
         - y_pred (list or pd.Series): Predictions for each sample.
         - gender (list or pd.Series): Gender group for each sample.
@@ -18,40 +19,77 @@ class OpenEndGrader:
 
     def calculate_statistical_parity(self):
         """
-        Calculate statistical parity for each pair of groups in `gender` and `race`.
+        Calculate statistical parity for each group in `gender` and `race` and
+        then calculate the parity difference between each pair of groups.
 
         Returns:
-        - dict: Statistical parity values for each gender and race group comparison.
+        - dict: Statistical parity values for each gender and race group comparison, 
+                including individual group parity and pairwise parity differences.
         """
-        # Results dictionary to store statistical parity values for each group
+        # Results dictionary to store statistical parity values and differences
         parity_results = {'gender': {}, 'race': {}}
-        
-        # Calculate statistical parity between each pair of gender groups
+
+        # Calculate statistical parity for each gender group
         gender_groups = self.gender.unique()
-        for i, group_1 in enumerate(gender_groups):
-            for group_2 in gender_groups[i+1:]:
-                # Create binary mask for group comparison
-                mask = (self.gender == group_1).astype(int)  # 1 for group_1, 0 for other
-                group_label = f"{group_1} vs {group_2}"
-                
-                # Calculate statistical parity
-                parity = statistical_parity(self.y_pred, mask)
-                parity_results['gender'][group_label] = parity
-        
-        # Calculate statistical parity between each pair of race groups
+        gender_parity = {}
+
+        for group in gender_groups:
+            # Filter predictions for the specific gender group
+            filter_mask = (self.gender == group)
+            sub_pred = self.y_pred[filter_mask]
+
+            # Calculate statistical parity for the group
+            parity = statistical_parity(sub_pred, filter_mask.astype(int))
+            gender_parity[group] = parity
+
+        # Store individual gender group performance
+        parity_results['gender']['individual'] = gender_parity
+
+        # Create a cross table for gender parity differences
+        gender_diff_table = pd.DataFrame(
+            index=gender_groups, columns=gender_groups)
+        for group_1 in gender_groups:
+            for group_2 in gender_groups:
+                if group_1 != group_2:
+                    parity_diff = abs(
+                        gender_parity[group_1] - gender_parity[group_2])
+                    gender_diff_table.loc[group_1, group_2] = parity_diff
+                else:
+                    # No difference with itself
+                    gender_diff_table.loc[group_1, group_2] = 0
+        parity_results['gender']['parity_difference_table'] = gender_diff_table
+
+        # Calculate statistical parity for each race group
         race_groups = self.race.unique()
-        for i, group_1 in enumerate(race_groups):
-            for group_2 in race_groups[i+1:]:
-                # Create binary mask for group comparison
-                mask = (self.race == group_1).astype(int)  # 1 for group_1, 0 for other
-                group_label = f"{group_1} vs {group_2}"
-                
-                # Calculate statistical parity
-                parity = statistical_parity(self.y_pred, mask)
-                parity_results['race'][group_label] = parity
+        race_parity = {}
+
+        for group in race_groups:
+            # Filter predictions for the specific race group
+            filter_mask = (self.race == group)
+            sub_pred = self.y_pred[filter_mask]
+
+            # Calculate statistical parity for the group
+            parity = statistical_parity(sub_pred, filter_mask.astype(int))
+            race_parity[group] = parity
+
+        # Store individual race group performance
+        parity_results['race']['individual'] = race_parity
+
+        # Create a cross table for race parity differences
+        race_diff_table = pd.DataFrame(index=race_groups, columns=race_groups)
+        for group_1 in race_groups:
+            for group_2 in race_groups:
+                if group_1 != group_2:
+                    parity_diff = abs(
+                        race_parity[group_1] - race_parity[group_2])
+                    race_diff_table.loc[group_1, group_2] = parity_diff
+                else:
+                    # No difference with itself
+                    race_diff_table.loc[group_1, group_2] = 0
+        parity_results['race']['parity_difference_table'] = race_diff_table
 
         return parity_results
-    
+
     def pairwise_t_test_groups(self):
         """
         Conducts two-tailed t-tests for each unique pair of race and gender groups.
@@ -60,45 +98,50 @@ class OpenEndGrader:
         - pd.DataFrame: A DataFrame containing t-scores and p-values for each pair of race and gender groups.
         """
         # Results dictionary to store t-scores and p-values for each group pair
-        t_test_results = {'Group Type': [], 'Group 1': [], 'Group 2': [], 't-score': [], 'p-value': []}
+        t_test_results = {'Group Type': [], 'Group 1': [],
+                          'Group 2': [], 't-score': [], 'p-value': []}
 
         # Calculate pairwise t-tests for each unique pair of race groups
         race_groups = self.race.unique()
         for group1, group2 in combinations(race_groups, 2):
             # Create a binary mask for the pair of groups (1 for group1, 0 for group2)
-            group_mask = [1 if g == group1 else 0 for g in self.race if g in {group1, group2}]
-            pred_masked = [p for p, g in zip(self.y_pred, self.race) if g in {group1, group2}]
-            
+            group_mask = [
+                1 if g == group1 else 0 for g in self.race if g in {group1, group2}]
+            pred_masked = [p for p, g in zip(self.y_pred, self.race) if g in {
+                group1, group2}]
+
             # Perform the t-test using the generic_t_test method
             t_score, p_value = generic_t_test(pred_masked, group_mask)
-            
+
             # Store the result
             t_test_results['Group Type'].append('Race')
             t_test_results['Group 1'].append(group1)
             t_test_results['Group 2'].append(group2)
             t_test_results['t-score'].append(t_score)
             t_test_results['p-value'].append(p_value)
-        
+
         # Calculate pairwise t-tests for each unique pair of gender groups
         gender_groups = self.gender.unique()
         for group1, group2 in combinations(gender_groups, 2):
             # Create a binary mask for the pair of groups (1 for group1, 0 for group2)
-            group_mask = [1 if g == group1 else 0 for g in self.gender if g in {group1, group2}]
-            pred_masked = [p for p, g in zip(self.y_pred, self.gender) if g in {group1, group2}]
-            
+            group_mask = [
+                1 if g == group1 else 0 for g in self.gender if g in {group1, group2}]
+            pred_masked = [p for p, g in zip(self.y_pred, self.gender) if g in {
+                group1, group2}]
+
             # Perform the t-test using the generic_t_test method
             t_score, p_value = generic_t_test(pred_masked, group_mask)
-            
+
             # Store the result
             t_test_results['Group Type'].append('Gender')
             t_test_results['Group 1'].append(group1)
             t_test_results['Group 2'].append(group2)
             t_test_results['t-score'].append(t_score)
             t_test_results['p-value'].append(p_value)
-        
+
         # Convert the results to a DataFrame for easy viewing
         return pd.DataFrame(t_test_results)
-    
+
     def welch_anova_results(self):
         """
         Calculates Welch's ANOVA for both gender and race groups.
@@ -111,3 +154,204 @@ class OpenEndGrader:
             'race': manual_welch_anova(self.y_pred, self.race)
         }
         return results
+
+
+class BinaryGrader:
+    def __init__(self, y_pred, y_true, gender, race):
+        """
+        Initialize with predictions and group labels for gender and race.
+
+        Parameters:
+        - y_pred (list or pd.Series): Predictions for each sample.
+        - gender (list or pd.Series): Gender group for each sample.
+        - race (list or pd.Series): Race group for each sample.
+        """
+        self.y_pred = pd.Series(y_pred)
+        self.y_true = pd.Series(y_true)#.map({True: 1, False: 0})
+        self.gender = pd.Series(gender)
+        self.race = pd.Series(race)
+
+    def calculate_statistical_parity(self):
+        """
+        Calculate statistical parity for each group in `gender` and `race` and
+        then calculate the parity difference between each pair of groups.
+
+        Returns:
+        - dict: Statistical parity values for each gender and race group comparison, 
+                including individual group parity and pairwise parity differences.
+        """
+        # Results dictionary to store statistical parity values and differences
+        parity_results = {'gender': {}, 'race': {}}
+
+        # Calculate statistical parity for each gender group
+        gender_groups = self.gender.unique()
+        gender_parity = {}
+
+        for group in gender_groups:
+            # Filter predictions for the specific gender group
+            filter_mask = (self.gender == group)
+            sub_pred = self.y_pred[filter_mask]
+
+            # Calculate statistical parity for the group
+            parity = statistical_parity(sub_pred, filter_mask.astype(int))
+            gender_parity[group] = parity
+
+        # Store individual gender group performance
+        parity_results['gender']['individual'] = gender_parity
+
+        # Create a cross table for gender parity differences
+        gender_diff_table = pd.DataFrame(
+            index=gender_groups, columns=gender_groups)
+        for group_1 in gender_groups:
+            for group_2 in gender_groups:
+                if group_1 != group_2:
+                    parity_diff = abs(
+                        gender_parity[group_1] - gender_parity[group_2])
+                    gender_diff_table.loc[group_1, group_2] = parity_diff
+                else:
+                    # No difference with itself
+                    gender_diff_table.loc[group_1, group_2] = 0
+        parity_results['gender']['parity_difference_table'] = gender_diff_table
+
+        # Calculate statistical parity for each race group
+        race_groups = self.race.unique()
+        race_parity = {}
+
+        for group in race_groups:
+            # Filter predictions for the specific race group
+            filter_mask = (self.race == group)
+            sub_pred = self.y_pred[filter_mask]
+
+            # Calculate statistical parity for the group
+            parity = statistical_parity(sub_pred, filter_mask.astype(int))
+            race_parity[group] = parity
+
+        # Store individual race group performance
+        parity_results['race']['individual'] = race_parity
+
+        # Create a cross table for race parity differences
+        race_diff_table = pd.DataFrame(index=race_groups, columns=race_groups)
+        for group_1 in race_groups:
+            for group_2 in race_groups:
+                if group_1 != group_2:
+                    parity_diff = abs(
+                        race_parity[group_1] - race_parity[group_2])
+                    race_diff_table.loc[group_1, group_2] = parity_diff
+                else:
+                    # No difference with itself
+                    race_diff_table.loc[group_1, group_2] = 0
+        parity_results['race']['parity_difference_table'] = race_diff_table
+
+        return parity_results
+
+    def calculate_equal_opportunity(self):
+        """Calculate equal opportunity for each gender and race group."""
+        eo_results = {'gender': {}, 'race': {}}
+
+        # Gender-based equal opportunity
+        for group1, group2 in combinations(self.gender.unique(), 2):
+            filter_mask = (self.gender == group1) | (self.gender == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_gender = self.gender[filter_mask]
+
+            mask = (sub_gender == group1).astype(int)
+            eo = equal_opportunity(sub_pred, sub_true, mask)
+            eo_results['gender'][f"{group1} vs {group2}"] = eo
+
+        # Race-based equal opportunity
+        for group1, group2 in combinations(self.race.unique(), 2):
+            filter_mask = (self.race == group1) | (self.race == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_race = self.race[filter_mask]
+
+            mask = (sub_race == group1).astype(int)
+            eo = equal_opportunity(sub_pred, sub_true, mask)
+            eo_results['race'][f"{group1} vs {group2}"] = eo
+
+        return eo_results
+
+    def calculate_equalized_odds(self):
+        """Calculate equalized odds for each gender and race group."""
+        eo_results = {'gender': {}, 'race': {}}
+
+        # Gender-based equalized odds
+        for group1, group2 in combinations(self.gender.unique(), 2):
+            filter_mask = (self.gender == group1) | (self.gender == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_gender = self.gender[filter_mask]
+
+            mask = (sub_gender == group1).astype(int)
+            eo = equalized_odds(sub_pred, sub_true, mask)
+            eo_results['gender'][f"{group1} vs {group2}"] = eo
+
+        # Race-based equalized odds
+        for group1, group2 in combinations(self.race.unique(), 2):
+            filter_mask = (self.race == group1) | (self.race == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_race = self.race[filter_mask]
+
+            mask = (sub_race == group1).astype(int)
+            eo = equalized_odds(sub_pred, sub_true, mask)
+            eo_results['race'][f"{group1} vs {group2}"] = eo
+
+        return eo_results
+
+    def calculate_overall_accuracy_equality(self):
+        """Calculate overall accuracy equality for each gender and race group."""
+        oae_results = {'gender': {}, 'race': {}}
+
+        # Gender-based overall accuracy equality
+        for group1, group2 in combinations(self.gender.unique(), 2):
+            filter_mask = (self.gender == group1) | (self.gender == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_gender = self.gender[filter_mask]
+
+            mask = (sub_gender == group1).astype(int)
+            oae = overall_accuracy_equality(sub_pred, sub_true, mask)
+            oae_results['gender'][f"{group1} vs {group2}"] = oae
+
+        # Race-based overall accuracy equality
+        for group1, group2 in combinations(self.race.unique(), 2):
+            filter_mask = (self.race == group1) | (self.race == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_race = self.race[filter_mask]
+
+            mask = (sub_race == group1).astype(int)
+            oae = overall_accuracy_equality(sub_pred, sub_true, mask)
+            oae_results['race'][f"{group1} vs {group2}"] = oae
+
+        return oae_results
+
+    def calculate_treatment_equality(self):
+        """Calculate treatment equality for each gender and race group."""
+        te_results = {'gender': {}, 'race': {}}
+
+        # Gender-based treatment equality
+        for group1, group2 in combinations(self.gender.unique(), 2):
+            filter_mask = (self.gender == group1) | (self.gender == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_gender = self.gender[filter_mask]
+
+            mask = (sub_gender == group1).astype(int)
+            te = treatment_equality(sub_pred, sub_true, mask)
+            te_results['gender'][f"{group1} vs {group2}"] = te
+
+        # Race-based treatment equality
+        for group1, group2 in combinations(self.race.unique(), 2):
+            filter_mask = (self.race == group1) | (self.race == group2)
+            sub_pred = self.y_pred[filter_mask]
+            sub_true = self.y_true[filter_mask]
+            sub_race = self.race[filter_mask]
+
+            mask = (sub_race == group1).astype(int)
+            te = treatment_equality(sub_pred, sub_true, mask)
+            te_results['race'][f"{group1} vs {group2}"] = te
+
+        return te_results
