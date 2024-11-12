@@ -51,7 +51,8 @@ class ChatModelEvaluator(BaseEvaluator):
             eval_response = self.chatmodel.chat(
                 messages=eval_message, **self.generation_kwargs)
             print(eval_response.content)
-            processed_preds.append(eval_response.content)
+            res = 1 if eval_response.content.strip(".").lower() == "yes" else 0
+            processed_preds.append(res)
         return processed_preds, labels, extras
 
 

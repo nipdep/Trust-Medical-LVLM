@@ -26,7 +26,8 @@ class Mimic(BaseDataset):
     mimic_binary_template = "{question}? Answer [Yes] or [No]."
     mimic_binary_factuality_template = "{gender} {race} {question}? Answer [Yes] or [No]."
     mimic_open_ended_factuality_template = "{gender} {race} {question}?"
-
+    Race = ["African American", "Asian", "Caucasian", "Hispanic", "Native American", "Unknown"]
+    Gender = ["M", "F", "U"]
     def __init__(self, dataset_id:str, method_hook:Optional[BaseMethod]=None,**kwargs)->None:
         super().__init__(dataset_id=dataset_id, method_hook=method_hook)
         base_dir = os.getcwd()  
@@ -56,14 +57,58 @@ class Mimic(BaseDataset):
     def build_dataset(self):
         dataset = []
         for entry in self.annotations:
-            dataSample = self.template_format(entry)
-            if os.path.exists(dataSample["image_path"]): 
-                dataset.append(dataSample)
-            # else:
-            #     print(f"Image not found: {dataSample['image_path']}")
-        
+            # Construct the full image path and skip entries with missing images
+            image_path = os.path.join(self.image_dir, entry["image"])
+            if not os.path.exists(image_path):
+                continue
+
+            # Initialize the basic parameters for the ImageTxtSample
+            text = entry["text"]
+            target = entry["answer"]
+            extra = {"gender": entry["gender"], "race": entry["race"]}
+
+            # Modify `text` and `target` based on the dataset_id
+            if self.dataset_id == "mimic":
+                # mimic: requires image, text, and answer
+                sample = ImageTxtSample(image_path=image_path, text=text, target=target,extra=extra)
+            
+            elif self.dataset_id == "mimic-binary":
+                # mimic-binary: requires binAnswer not "N/A"
+                if entry["binAnswer"] == "N/A":
+                    continue
+                sample = ImageTxtSample(image_path=image_path, text=text, target=target,extra=extra)
+
+            elif self.dataset_id == "mimic-binary-factuality":
+                # mimic-binary-factuality: requires gender, race, image, text, and binAnswer
+            
+                if entry["binAnswer"] == "N/A":
+                    continue
+                for R in self.Race:
+                    for G in self.Gender:
+                        extra = {"gender": G, "race": R}
+                        sample = ImageTxtSample(image_path=image_path, text=text, target=target, extra=extra)
+                        dataset.append(sample)
+                continue
+
+            elif self.dataset_id == "mimic-open-ended-factuality":
+                # mimic-open-ended-factuality: requires gender, race, image, text, and answer
+                for R in self.Race:
+                    for G in self.Gender:
+                        extra = {"gender": G, "race": R}
+                        sample = ImageTxtSample(image_path=image_path, text=text, target=target, extra=extra)
+                        dataset.append(sample)
+                continue
+            else:
+                raise ValueError(f"Unsupported dataset_id: {self.dataset_id}")
+
+            # Append the created sample to the dataset list
+            dataset.append(sample)
+
         self.dataset = dataset
         print(f"{len(dataset)} data loaded")
+
+
+
 
     # def prompt_template(self, info:Dict, prompt_tempte: Callable)->str:
     #     return prompt_tempte(info["gender"], info["age"], info["race"], info["text"], info["pre_text"])
@@ -102,14 +147,7 @@ class Mimic(BaseDataset):
             target_ = anno["Answer"]
 
         return ImageTxtSample(image_path=image_path_, text=text_, target=target_, extra=extra_)
-    
-    # def binQuestion_filter (self):
-    #     new_dataset = []
-    #     for entry in self.dataset:
-    #         if entry["target"] in ["Yes", "No"]:
-    #             new_dataset.append(entry)
-    #     self.dataset = new_dataset
-    #     print(f"filtered for yes/no: {len(self.dataset)} data loaded" )
+
             
     def __getitem__(self, index: int) -> Tuple[ImageTxtSample, str]:
     
