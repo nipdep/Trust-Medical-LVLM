@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from typing import Dict, Any, Sequence, List, Tuple, Union, Optional
-from src.evaluators.metrics import _supported_metrics
+from src.grader.metrics import _supported_metrics
 from src.utils.registry import registry
 
 class BaseEvaluator(ABC):
@@ -58,15 +58,15 @@ class BaseEvaluator(ABC):
         Return:
             results
         """
-
+        # XXX: tentitive implementation
         processed_preds, processed_labels, processed_extras = self.process(preds, labels, extras)
-        results = {}
+        # results = {}
 
-        for metrics_id, kwargs in self.metrics_cfg.items():
-            metrics_fn = _supported_metrics[metrics_id]
-            results[metrics_id] = metrics_fn(processed_labels, processed_preds, **kwargs)
+        # for metrics_id, kwargs in self.metrics_cfg.items():
+        #     metrics_fn = _supported_metrics[metrics_id]
+        #     results[metrics_id] = metrics_fn(processed_labels, processed_preds, **kwargs)
         
-        return results
+        return {"processed_preds": processed_preds}
     
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.eval(*args, **kwds)

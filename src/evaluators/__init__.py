@@ -1,4 +1,4 @@
-from .chatmodel_eval import ChatModelEvaluator, ChatModelScorer
+from .chatmodel_eval import ChatModelEvaluator, ChatModelScorer, ChatModelYesOrNoEvaluator
 from .classifier_eval import ClassiferActionEvaluator, HarmBenchModelEvaluator
 from .rule_eval import (
     ContainOrNotEvaluator,
