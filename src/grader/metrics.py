@@ -119,32 +119,25 @@ def equal_opportunity(y_true, y_pred, group):
     TPR_m = (np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 1)) / positives_m
              if positives_m > 0 else np.nan)
     
-    return TPR_f, TPR_m
+    return TPR_m#, TPR_f
 
 def equalized_odds(y_true, y_pred, group):
     """Calculate Equalized Odds (TPR and FPR equality across groups)."""
-    g_f = (group == 0)
+    # g_f = (group == 0)
     g_m = (group == 1)
     
-    # True Positive Rate (TPR)
-    positives_f = np.sum(y_true[g_f] == 1)
-    positives_m = np.sum(y_true[g_m] == 1)
-    
-    TPR_f = (np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 1)) / positives_f
-             if positives_f > 0 else np.nan)
-    TPR_m = (np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 1)) / positives_m
-             if positives_m > 0 else np.nan)
-    
     # False Positive Rate (FPR)
-    negatives_f = np.sum(y_true[g_f] == 0)
+    # negatives_f = np.sum(y_true[g_f] == 0)
     negatives_m = np.sum(y_true[g_m] == 0)
+    # FPR_f = (np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 0)) / negatives_f
+    #          if negatives_f > 0 else np.nan)
     
-    FPR_f = (np.sum((y_pred[g_f] == 1) & (y_true[g_f] == 0)) / negatives_f
-             if negatives_f > 0 else np.nan)
-    FPR_m = (np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 0)) / negatives_m
-             if negatives_m > 0 else np.nan)
-    
-    return (TPR_f, FPR_f), (TPR_m, FPR_m)
+    if negatives_m > 0:
+        FPR_m = (np.sum((y_pred[g_m] == 1) & (y_true[g_m] == 0)) / negatives_m
+                if negatives_m > 0 else np.nan)
+    else:
+        FPR_m = np.inf
+    return FPR_m#, FPR_f)
 
 def overall_accuracy_equality(y_true, y_pred, group):
     """Calculate Overall Accuracy Equality across groups."""
@@ -155,7 +148,7 @@ def overall_accuracy_equality(y_true, y_pred, group):
     accuracy_f = np.mean(y_pred[g_f] == y_true[g_f])
     accuracy_m = np.mean(y_pred[g_m] == y_true[g_m])
     
-    return accuracy_f, accuracy_m
+    return accuracy_m#, accuracy_f 
 
 def treatment_equality(y_true, y_pred, group):
     """Calculate Treatment Equality (ratio of errors across groups)."""
@@ -186,7 +179,7 @@ def treatment_equality(y_true, y_pred, group):
     error_ratio_f = (fp_f + fn_f) / len(y_true[g_f]) if len(y_true[g_f]) > 0 else 0
     error_ratio_m = (fp_m + fn_m) / len(y_true[g_m]) if len(y_true[g_m]) > 0 else 0
     
-    return error_ratio_f, error_ratio_m
+    return error_ratio_m#, error_ratio_f 
 
 def manual_welch_anova(binary_array, group_names):
     """
