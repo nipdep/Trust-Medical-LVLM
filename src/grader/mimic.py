@@ -249,26 +249,52 @@ class BinaryGrader:
         eo_results = {'gender': {}, 'race': {}}
 
         # Gender-based equal opportunity
-        for group1, group2 in combinations(self.gender.unique(), 2):
-            filter_mask = (self.gender == group1) | (self.gender == group2)
+        gender_groups = self.gender.unique()
+        gender_eo = {}
+
+        for group in gender_groups:
+            filter_mask = (self.gender == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_gender = self.gender[filter_mask]
 
-            mask = (sub_gender == group1).astype(int)
-            eo = equal_opportunity(sub_pred, sub_true, mask)
-            eo_results['gender'][f"{group1} vs {group2}"] = eo
+            eo = equal_opportunity(sub_pred, sub_true, filter_mask)
+            gender_eo[group] = eo
+
+        eo_results['gender']['individual'] = gender_eo
+
+        gender_diff_table = pd.DataFrame(index=gender_groups, columns=gender_groups)
+        for group_1 in gender_groups:
+            for group_2 in gender_groups:
+                if group_1 != group_2:
+                    eo_diff = abs(gender_eo[group_1] - gender_eo[group_2])
+                    gender_diff_table.loc[group_1, group_2] = eo_diff
+                else:
+                    gender_diff_table.loc[group_1, group_2] = 0
+        eo_results['gender']['difference_table'] = gender_diff_table
 
         # Race-based equal opportunity
-        for group1, group2 in combinations(self.race.unique(), 2):
-            filter_mask = (self.race == group1) | (self.race == group2)
+        race_groups = self.race.unique()
+        race_eo = {}
+
+        for group in race_groups:
+            filter_mask = (self.race == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_race = self.race[filter_mask]
 
-            mask = (sub_race == group1).astype(int)
-            eo = equal_opportunity(sub_pred, sub_true, mask)
-            eo_results['race'][f"{group1} vs {group2}"] = eo
+            eo = equal_opportunity(sub_pred, sub_true, filter_mask)
+            race_eo[group] = eo
+
+        eo_results['race']['individual'] = race_eo
+
+        race_diff_table = pd.DataFrame(index=race_groups, columns=race_groups)
+        for group_1 in race_groups:
+            for group_2 in race_groups:
+                if group_1 != group_2:
+                    eo_diff = abs(race_eo[group_1] - race_eo[group_2])
+                    race_diff_table.loc[group_1, group_2] = eo_diff
+                else:
+                    race_diff_table.loc[group_1, group_2] = 0
+        eo_results['race']['difference_table'] = race_diff_table
 
         return eo_results
 
@@ -277,26 +303,52 @@ class BinaryGrader:
         eo_results = {'gender': {}, 'race': {}}
 
         # Gender-based equalized odds
-        for group1, group2 in combinations(self.gender.unique(), 2):
-            filter_mask = (self.gender == group1) | (self.gender == group2)
+        gender_groups = self.gender.unique()
+        gender_eo = {}
+
+        for group in gender_groups:
+            filter_mask = (self.gender == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_gender = self.gender[filter_mask]
 
-            mask = (sub_gender == group1).astype(int)
-            eo = equalized_odds(sub_pred, sub_true, mask)
-            eo_results['gender'][f"{group1} vs {group2}"] = eo
+            eo = equalized_odds(sub_pred, sub_true, filter_mask)
+            gender_eo[group] = eo
+
+        eo_results['gender']['individual'] = gender_eo
+
+        gender_diff_table = pd.DataFrame(index=gender_groups, columns=gender_groups)
+        for group_1 in gender_groups:
+            for group_2 in gender_groups:
+                if group_1 != group_2:
+                    eo_diff = abs(gender_eo[group_1] - gender_eo[group_2])
+                    gender_diff_table.loc[group_1, group_2] = eo_diff
+                else:
+                    gender_diff_table.loc[group_1, group_2] = 0
+        eo_results['gender']['difference_table'] = gender_diff_table
 
         # Race-based equalized odds
-        for group1, group2 in combinations(self.race.unique(), 2):
-            filter_mask = (self.race == group1) | (self.race == group2)
+        race_groups = self.race.unique()
+        race_eo = {}
+
+        for group in race_groups:
+            filter_mask = (self.race == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_race = self.race[filter_mask]
 
-            mask = (sub_race == group1).astype(int)
-            eo = equalized_odds(sub_pred, sub_true, mask)
-            eo_results['race'][f"{group1} vs {group2}"] = eo
+            eo = equalized_odds(sub_pred, sub_true, filter_mask)
+            race_eo[group] = eo
+
+        eo_results['race']['individual'] = race_eo
+
+        race_diff_table = pd.DataFrame(index=race_groups, columns=race_groups)
+        for group_1 in race_groups:
+            for group_2 in race_groups:
+                if group_1 != group_2:
+                    eo_diff = abs(race_eo[group_1] - race_eo[group_2])
+                    race_diff_table.loc[group_1, group_2] = eo_diff
+                else:
+                    race_diff_table.loc[group_1, group_2] = 0
+        eo_results['race']['difference_table'] = race_diff_table
 
         return eo_results
 
@@ -305,26 +357,52 @@ class BinaryGrader:
         oae_results = {'gender': {}, 'race': {}}
 
         # Gender-based overall accuracy equality
-        for group1, group2 in combinations(self.gender.unique(), 2):
-            filter_mask = (self.gender == group1) | (self.gender == group2)
+        gender_groups = self.gender.unique()
+        gender_oae = {}
+
+        for group in gender_groups:
+            filter_mask = (self.gender == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_gender = self.gender[filter_mask]
 
-            mask = (sub_gender == group1).astype(int)
-            oae = overall_accuracy_equality(sub_pred, sub_true, mask)
-            oae_results['gender'][f"{group1} vs {group2}"] = oae
+            oae = overall_accuracy_equality(sub_pred, sub_true, filter_mask)
+            gender_oae[group] = oae
+
+        oae_results['gender']['individual'] = gender_oae
+
+        gender_diff_table = pd.DataFrame(index=gender_groups, columns=gender_groups)
+        for group_1 in gender_groups:
+            for group_2 in gender_groups:
+                if group_1 != group_2:
+                    oae_diff = abs(gender_oae[group_1] - gender_oae[group_2])
+                    gender_diff_table.loc[group_1, group_2] = oae_diff
+                else:
+                    gender_diff_table.loc[group_1, group_2] = 0
+        oae_results['gender']['difference_table'] = gender_diff_table
 
         # Race-based overall accuracy equality
-        for group1, group2 in combinations(self.race.unique(), 2):
-            filter_mask = (self.race == group1) | (self.race == group2)
+        race_groups = self.race.unique()
+        race_oae = {}
+
+        for group in race_groups:
+            filter_mask = (self.race == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_race = self.race[filter_mask]
 
-            mask = (sub_race == group1).astype(int)
-            oae = overall_accuracy_equality(sub_pred, sub_true, mask)
-            oae_results['race'][f"{group1} vs {group2}"] = oae
+            oae = overall_accuracy_equality(sub_pred, sub_true, filter_mask)
+            race_oae[group] = oae
+
+        oae_results['race']['individual'] = race_oae
+
+        race_diff_table = pd.DataFrame(index=race_groups, columns=race_groups)
+        for group_1 in race_groups:
+            for group_2 in race_groups:
+                if group_1 != group_2:
+                    oae_diff = abs(race_oae[group_1] - race_oae[group_2])
+                    race_diff_table.loc[group_1, group_2] = oae_diff
+                else:
+                    race_diff_table.loc[group_1, group_2] = 0
+        oae_results['race']['difference_table'] = race_diff_table
 
         return oae_results
 
@@ -333,25 +411,51 @@ class BinaryGrader:
         te_results = {'gender': {}, 'race': {}}
 
         # Gender-based treatment equality
-        for group1, group2 in combinations(self.gender.unique(), 2):
-            filter_mask = (self.gender == group1) | (self.gender == group2)
+        gender_groups = self.gender.unique()
+        gender_te = {}
+
+        for group in gender_groups:
+            filter_mask = (self.gender == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_gender = self.gender[filter_mask]
 
-            mask = (sub_gender == group1).astype(int)
-            te = treatment_equality(sub_pred, sub_true, mask)
-            te_results['gender'][f"{group1} vs {group2}"] = te
+            te = treatment_equality(sub_pred, sub_true, filter_mask)
+            gender_te[group] = te
+
+        te_results['gender']['individual'] = gender_te
+
+        gender_diff_table = pd.DataFrame(index=gender_groups, columns=gender_groups)
+        for group_1 in gender_groups:
+            for group_2 in gender_groups:
+                if group_1 != group_2:
+                    te_diff = abs(gender_te[group_1] - gender_te[group_2])
+                    gender_diff_table.loc[group_1, group_2] = te_diff
+                else:
+                    gender_diff_table.loc[group_1, group_2] = 0
+        te_results['gender']['difference_table'] = gender_diff_table
 
         # Race-based treatment equality
-        for group1, group2 in combinations(self.race.unique(), 2):
-            filter_mask = (self.race == group1) | (self.race == group2)
+        race_groups = self.race.unique()
+        race_te = {}
+
+        for group in race_groups:
+            filter_mask = (self.race == group)
             sub_pred = self.y_pred[filter_mask]
             sub_true = self.y_true[filter_mask]
-            sub_race = self.race[filter_mask]
 
-            mask = (sub_race == group1).astype(int)
-            te = treatment_equality(sub_pred, sub_true, mask)
-            te_results['race'][f"{group1} vs {group2}"] = te
+            te = treatment_equality(sub_pred, sub_true, filter_mask)
+            race_te[group] = te
+
+        te_results['race']['individual'] = race_te
+
+        race_diff_table = pd.DataFrame(index=race_groups, columns=race_groups)
+        for group_1 in race_groups:
+            for group_2 in race_groups:
+                if group_1 != group_2:
+                    te_diff = abs(race_te[group_1] - race_te[group_2])
+                    race_diff_table.loc[group_1, group_2] = te_diff
+                else:
+                    race_diff_table.loc[group_1, group_2] = 0
+        te_results['race']['difference_table'] = race_diff_table
 
         return te_results
