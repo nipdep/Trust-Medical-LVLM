@@ -19,7 +19,7 @@ from typing import List, Dict, Any, Sequence, Optional, Tuple, Callable
 @registry.register_dataset()
 class Mimic(BaseDataset):
     dataset_ids: Sequence[str] = ["mimic", "mimic-binary", "mimic-binary-factuality",
-                                  "mimic-open-ended-factuality"]
+                                  "mimic-factuality"]
     dataset_config: Optional[Dict[str, str]] = {}
 
     mimic_template = "{question}?"
@@ -34,7 +34,7 @@ class Mimic(BaseDataset):
         self.anno_dir = "/home/pathin/safety_llm/Trust-Medical-LVLM/data/data/physionet.org/files/mimic-cxr-jpg/2.0.0/modified_mimic_factuality.json"
 
         self.annotations = self.load_json(self.anno_dir)
-        if dataset_id not in ["mimic", "mimic-open-ended-factuality"]:
+        if dataset_id not in ["mimic", "mimic-factuality"]:
             self.annotations = self.filter_json(self.annotations)
         # self.filter_json()
         self.build_dataset()
@@ -89,7 +89,7 @@ class Mimic(BaseDataset):
             text_ = self.mimic_binary_factuality_template.format(
                 race=race_, gender=gender_, question=text_)
             target_ = 1 if anno["binAnswer"] == "Yes" else 0
-        elif self.dataset_id == "mimic-open-ended-factuality":
+        elif self.dataset_id == "mimic-factuality":
             text_ = self.mimic_binary_factuality_template.format(
                 race=race_, gender=gender_, question=text_)
             target_ = anno["answer"]
