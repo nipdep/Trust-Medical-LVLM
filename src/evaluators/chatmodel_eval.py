@@ -51,7 +51,7 @@ class ChatModelEvaluator(BaseEvaluator):
             eval_response = self.chatmodel.chat(
                 messages=eval_message, **self.generation_kwargs)
             print(eval_response.content)
-            processed_preds.append(res)
+            processed_preds.append(eval_response)
         return processed_preds, labels, extras
 
 
