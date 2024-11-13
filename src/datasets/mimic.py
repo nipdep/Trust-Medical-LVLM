@@ -116,7 +116,7 @@ class Mimic(BaseDataset):
 
 class MimicCombinator(Mimic):
     # Define dataset_ids specifically for Cmimic
-    dataset_ids: List[str] = ["mimic-binary-factuality", "mimic-open-ended-factuality"]
+    dataset_ids: List[str] = ["mimic-binary-factuality", "mimic-factuality"]
 
     def __init__(self, dataset_id: str, demographic_combinations: Dict[str, List[str]], **kwargs):
         # Store demographic combinations in self.group
