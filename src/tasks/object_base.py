@@ -13,7 +13,7 @@ import json
 import os
 
 class ObjectBaseTask(ABC):    
-    def __init__(self, dataset: BaseDataset, model: BaseChat, evaluator, method_cfg: Optional[Dict] = {}, dataset_cfg: Optional[Dict] = {}, generation_kwargs: Optional[Dict] = {}, log_file: Optional[str] = None) -> None:
+    def __init__(self, dataset: BaseDataset, model: BaseChat, evaluator, method_cfg: Optional[Dict] = {}, dataset_cfg: Optional[Dict] = {}, generation_kwargs: Optional[Dict] = {}, log_file: Optional[str] = None, sample_size=None) -> None:
         self.dataset = dataset
         self.model = model
         self.evaluator = evaluator
@@ -21,6 +21,7 @@ class ObjectBaseTask(ABC):
         self.dataset_cfg = dataset_cfg
         self.generation_kwargs = generation_kwargs
         self.log_file = log_file
+        self.sample_size = sample_size
     
     # def get_handlers(self) -> None:
     #     self.evaluators = self.get_evaluators()
@@ -73,31 +74,6 @@ class ObjectBaseTask(ABC):
                 warnings.warn(f"{key} already exists in results.")
         results.update(result)            
 
-        # #sub aspects
-        # subset_eval = extras[0] is not None and "subset" in extras[0]
-        # if subset_eval:
-        #     # Evaluate with subset of dataset, `extra` field in dataclass must have `subset` key to enable subset evaluation.
-        #     subset_list = [item['subset'] for item in extras]
-        #     assert any(subset_list)
-
-        #     subsets = set(subset_list)
-        #     for subset in subsets:
-        #         preds_subset = [preds[i] for i in range(len(preds)) if subset_list[i] == subset]
-        #         labels_subset = [labels[i] for i in range(len(labels)) if subset_list[i] == subset]
-        #         extras_subset = [extras[i] for i in range(len(extras)) if subset_list[i] == subset]
-
-        #         subset_results = {}
-        #         for evaluator in self.evaluators:
-        #             subset_result = evaluator(preds_subset, labels_subset, extras_subset)
-        #             for key in subset_result.keys():
-        #                 subset_key = f"{key}_{subset}"
-        #                 if subset_key in results.keys():
-        #                     warnings.warn(f"{subset_key} already exists in results.")
-        #                 if not isinstance(subset_result[key], Sequence):
-        #                     # only need summary_keys
-        #                     subset_results[subset_key] = subset_result[key]
-        #         results.update(subset_results)
-
         results.update(
             {
                 'content': contents if any(contents) else None,
@@ -134,30 +110,14 @@ class ObjectBaseTask(ABC):
     def generate(self, dataloader: DataLoader, **generate_kwargs) -> List[Dict[str, Any]]:
         print('len(self.dataset): ', len(dataloader.dataset))
         responses = []
-        n = 20
         i = 0
+        if self.sample_size:
+            n = self.sample_size
+        else:
+            n = len(dataloader.dataset)
+  
         for batch_data in tqdm(dataloader, total=n):
             for data in batch_data:
-                """
-                    # for text data
-                    message = [
-                        {
-                            "role": "user",
-                            "content": text
-                        }
-                    ]
-
-                    # for multimodal data
-                    message = [
-                        {
-                            "role": "user",
-                            "content": {
-                                "image_path": ...,
-                                "text": ...
-                            }
-                        }
-                    ]
-                """
                 
                 message = data['message']
                 target = data['target']
