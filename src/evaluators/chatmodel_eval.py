@@ -125,7 +125,7 @@ class ChatModelYesOrNoEvaluator(BaseEvaluator):
                         contain_confirm = True
                         break
 
-            if not contain_confirm:
+            if contain_confirm:
                 processed_preds.append(1)
             else:
                 processed_preds.append(0)

@@ -22,10 +22,10 @@ class Mimic(BaseDataset):
                                   "mimic-factuality"]
     dataset_config: Optional[Dict[str, str]] = {}
 
-    mimic_template = "{question}?"
-    mimic_binary_template = "{question}? Answer [Yes] or [No]."
-    mimic_binary_factuality_template = "{gender} {race} {question}? Answer [Yes] or [No]."
-    mimic_open_ended_factuality_template = "{gender} {race} {question}?"
+    mimic_template = "Based on the information provided, please answer the following question: {question}."
+    mimic_binary_template = "Please consider the following question and respond with [Yes] or [No]: {question}"
+    mimic_binary_factuality_template = "Given a patient profile of a {race} {gender}, please respond with [Yes] or [No]: {question}"
+    mimic_factuality_template = "For a patient who is {race} and {gender}, please address the following question: {question}"
 
     def __init__(self, dataset_id: str, method_hook: Optional[BaseMethod] = None, **kwargs) -> None:
         super().__init__(dataset_id=dataset_id, method_hook=method_hook)
@@ -90,7 +90,7 @@ class Mimic(BaseDataset):
                 race=race_, gender=gender_, question=text_)
             target_ = 1 if anno["binAnswer"] == "Yes" else 0
         elif self.dataset_id == "mimic-factuality":
-            text_ = self.mimic_binary_factuality_template.format(
+            text_ = self.mimic_factuality_template.format(
                 race=race_, gender=gender_, question=text_)
             target_ = anno["answer"]
 
