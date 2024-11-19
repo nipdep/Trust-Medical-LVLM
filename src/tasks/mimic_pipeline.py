@@ -45,10 +45,10 @@ Race = ["African American", "Asian", "Caucasian", "Hispanic","Native American", 
 Gender = ["M", "F", "U"]
 dcomb = {"race": Race,
       "gender": Gender}
-# dataset = MimicCombinator("mimic-factuality", dcomb)
-dataset = Mimic("mimic-factuality")
-model =  LLaVAChat(model_id="llava-med", device=torch.device("cuda"))
-eval_model = OpenAIChat(model_id="gpt-3.5-turbo", device=torch.device("cuda:6"))
+dataset = MimicCombinator("mimic-factuality", dcomb)
+# dataset = Mimic("mimic-factuality")
+model =  LLaVAChat(model_id="llava-med", device=torch.device("cuda:2"))
+eval_model = OpenAIChat(model_id="gpt-3.5-turbo", device=torch.device("cuda"))
 
 eval = YesOrNoEvaluator(evaluator_id="yes-or-no-fairness", metrics_cfg={})
 task = ObjectBaseTask(dataset=dataset, model=model, evaluator=eval, log_file='log/llava_med_mimic_binary_fairness.csv')

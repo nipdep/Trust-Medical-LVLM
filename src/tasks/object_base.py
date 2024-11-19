@@ -11,7 +11,7 @@ from src.evaluators.base import SequentialEvaluator
 import warnings
 import json
 import os
-
+BATCH_SIZE = 128
 class ObjectBaseTask(ABC):    
     def __init__(self, dataset: BaseDataset, model: BaseChat, evaluator, method_cfg: Optional[Dict] = {}, dataset_cfg: Optional[Dict] = {}, generation_kwargs: Optional[Dict] = {}, log_file: Optional[str] = None) -> None:
         self.dataset = dataset
@@ -110,6 +110,7 @@ class ObjectBaseTask(ABC):
     def generate(self, dataloader: DataLoader, **generate_kwargs) -> List[Dict[str, Any]]:
         print('len(self.dataset): ', len(dataloader.dataset))
         responses = []
+        n = 79
         i = 0
         n = self.dataset_cfg.get('sample_size', len(dataloader.dataset))
   
