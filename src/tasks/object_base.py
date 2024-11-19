@@ -11,7 +11,7 @@ from src.evaluators.base import SequentialEvaluator
 import warnings
 import json
 import os
-
+BATCH_SIZE = 128
 class ObjectBaseTask(ABC):    
     def __init__(self, dataset: BaseDataset, model: BaseChat, evaluator, method_cfg: Optional[Dict] = {}, dataset_cfg: Optional[Dict] = {}, generation_kwargs: Optional[Dict] = {}, log_file: Optional[str] = None) -> None:
         self.dataset = dataset
@@ -57,7 +57,7 @@ class ObjectBaseTask(ABC):
     #     return dataset
     
     def get_dataloader(self) -> DataLoader:
-        dataloader = DataLoader(dataset=self.dataset, batch_size=1, collate_fn=collate_fn, shuffle=True)
+        dataloader = DataLoader(dataset=self.dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, shuffle=True)
         return dataloader
 
     def eval(self, responses: List[Dict[str, Any]]) -> Dict[str, Union[float, Sequence]]:
@@ -134,9 +134,9 @@ class ObjectBaseTask(ABC):
     def generate(self, dataloader: DataLoader, **generate_kwargs) -> List[Dict[str, Any]]:
         print('len(self.dataset): ', len(dataloader.dataset))
         responses = []
-        n = 20
+        n = 79
         i = 0
-        for batch_data in tqdm(dataloader, total=n):
+        for batch_data in tqdm(dataloader,total=n):
             for data in batch_data:
                 """
                     # for text data
