@@ -13,7 +13,7 @@ import json
 import os
 
 class ObjectBaseTask(ABC):    
-    def __init__(self, dataset: BaseDataset, model: BaseChat, evaluator, method_cfg: Optional[Dict] = {}, dataset_cfg: Optional[Dict] = {}, generation_kwargs: Optional[Dict] = {}, log_file: Optional[str] = None, sample_size=None) -> None:
+    def __init__(self, dataset: BaseDataset, model: BaseChat, evaluator, method_cfg: Optional[Dict] = {}, dataset_cfg: Optional[Dict] = {}, generation_kwargs: Optional[Dict] = {}, log_file: Optional[str] = None) -> None:
         self.dataset = dataset
         self.model = model
         self.evaluator = evaluator
@@ -21,7 +21,7 @@ class ObjectBaseTask(ABC):
         self.dataset_cfg = dataset_cfg
         self.generation_kwargs = generation_kwargs
         self.log_file = log_file
-        self.sample_size = sample_size
+        # self.sample_size = sample_size
     
     # def get_handlers(self) -> None:
     #     self.evaluators = self.get_evaluators()
@@ -57,8 +57,8 @@ class ObjectBaseTask(ABC):
     #     dataset = dataset_cls(self.dataset_id, method_hook=self.method, **self.dataset_cfg)
     #     return dataset
     
-    def get_dataloader(self) -> DataLoader:
-        dataloader = DataLoader(dataset=self.dataset, batch_size=1, collate_fn=collate_fn, shuffle=True)
+    def get_dataloader(self, shuffle=True) -> DataLoader:
+        dataloader = DataLoader(dataset=self.dataset, batch_size=1, collate_fn=collate_fn, shuffle=shuffle)
         return dataloader
 
     def eval(self, responses: List[Dict[str, Any]]) -> Dict[str, Union[float, Sequence]]:
@@ -111,12 +111,9 @@ class ObjectBaseTask(ABC):
         print('len(self.dataset): ', len(dataloader.dataset))
         responses = []
         i = 0
-        if self.sample_size:
-            n = self.sample_size
-        else:
-            n = len(dataloader.dataset)
+        n = self.dataset_cfg.get('sample_size', len(dataloader.dataset))
   
-        for batch_data in tqdm(dataloader, total=n):
+        for batch_data in tqdm(dataloader, total=n-1):
             for data in batch_data:
                 
                 message = data['message']
@@ -143,7 +140,7 @@ class ObjectBaseTask(ABC):
         
     def pipeline(self):
         # self.get_handlers()
-        dataloader = self.get_dataloader()
+        dataloader = self.get_dataloader(shuffle=self.dataset_cfg.get('shuffle', True))
         responses = self.generate(dataloader, **self.generation_kwargs)
         results = self.eval(responses)
         result_df = self.save_results(results)
