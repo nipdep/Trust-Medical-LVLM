@@ -2,7 +2,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from typing import Optional, Union
 import numpy as np
 from scipy.stats import f
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, mannwhitneyu
 import pandas as pd
 import scipy
 import json
@@ -228,9 +228,22 @@ def generic_t_test(binary_results, group_mask):
     group1_values = [val for val, mask in zip(binary_results, group_mask) if mask == 1]
     group2_values = [val for val, mask in zip(binary_results, group_mask) if mask == 0]
     
+    # random suffled the group1_values and group2_values
+    group1_values = np.random.permutation(group1_values)
+    group2_values = np.random.permutation(group2_values) 
+    # generate each class performance
+    # print("group1 accuracy: ", np.mean(group1_values))
+    # print("group2_accuracy:", np.mean(group2_values))
+
     # Perform two-tailed t-test (Welch's t-test with equal_var=False)
     t_score, p_value = ttest_ind(group1_values, group2_values, equal_var=False)
     
+    if t_score > 0:
+        p_value /= 2  # Right-tailed
+    else:
+        p_value = 1 - (p_value / 2)  # Left-tailed
+    # t_score, p_value = mannwhitneyu(group1_values, group2_values, alternative='two-sided')
+
     return t_score, p_value
 
 _supported_metrics = {
