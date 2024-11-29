@@ -23,17 +23,6 @@ class ObjectBaseTask(ABC):
         self.log_file = log_file
         # self.sample_size = sample_size
     
-    # def get_handlers(self) -> None:
-    #     self.evaluators = self.get_evaluators()
-    #     self.method = self.get_method() # get method before dataset
-    #     self.dataset = self.get_dataset()
-    #     self.model = self.get_model()
-    
-    # def get_model(self) -> BaseChat:
-    #     model_cls = registry.get_chatmodel_class(self.model_id)
-    #     model = model_cls(self.model_id)
-    #     return model
-    
     def get_method(self) -> BaseMethod:
         if not self.method_cfg:
             return None
@@ -44,19 +33,7 @@ class ObjectBaseTask(ABC):
         method_cls = registry.get_method_class(method_id)
         method = method_cls(method_id, **method_kwargs)
         return method
-    
-    # def get_evaluators(self) -> List[SequentialEvaluator]:
-    #     evaluators = []
 
-    #     for evaluator_seq_cfg in self.evaluator_seq_cfgs:
-    #         evaluators.append(SequentialEvaluator(evaluator_seq_cfg=evaluator_seq_cfg))
-    #     return evaluators
-
-    # def get_dataset(self) -> BaseDataset:
-    #     dataset_cls: Type[BaseDataset] = registry.get_dataset_class(self.dataset_id)
-    #     dataset = dataset_cls(self.dataset_id, method_hook=self.method, **self.dataset_cfg)
-    #     return dataset
-    
     def get_dataloader(self, shuffle=True) -> DataLoader:
         dataloader = DataLoader(dataset=self.dataset, batch_size=1, collate_fn=collate_fn, shuffle=shuffle)
         return dataloader
@@ -66,6 +43,12 @@ class ObjectBaseTask(ABC):
         preds: Sequence[str] = [response['response'] for response in responses]
         labels: Sequence[str] = [response['target'] for response in responses]
         extras: Sequence[str] = [response['extra'] for response in responses]
+        token_probs: Sequence[float] = [response['probabilities'] for response in responses]
+
+        # add the token_probs to the extras
+        for i in range(len(extras)):
+            extras[i]['token_probs'] = token_probs[i]
+
         results = {}
 
         result = self.evaluator(preds, labels, extras=extras)
@@ -87,7 +70,6 @@ class ObjectBaseTask(ABC):
     def save_results(self, results):
         # Convert the dictionary to a DataFrame
         df = pd.DataFrame.from_dict(results)
-        # print('Original df:\n', df)
 
         # Check if 'extra' column contains dictionaries and expand them if so
         if 'content' in df.columns and df['content'].apply(lambda x: isinstance(x, dict)).any():
@@ -100,9 +82,7 @@ class ObjectBaseTask(ABC):
             # Normalize the 'extra' column into separate columns and drop the original 'extra' column
             extra_df = pd.json_normalize(df['extra'])
             df = df.drop(columns=['extra']).join(extra_df)
-        
-        # print('Expanded df:\n', df)
-        
+                
         # Save the DataFrame to self.log_file, appending if it already exists
         df.to_csv(self.log_file, index=False)
         return df
@@ -110,7 +90,6 @@ class ObjectBaseTask(ABC):
     def generate(self, dataloader: DataLoader, **generate_kwargs) -> List[Dict[str, Any]]:
         print('len(self.dataset): ', len(dataloader.dataset))
         responses = []
-        n = 79
         i = 0
         n = self.dataset_cfg.get('sample_size', len(dataloader.dataset))
   
@@ -124,11 +103,11 @@ class ObjectBaseTask(ABC):
                 response = self.model.chat(messages=message, **generate_kwargs)
                 output = {
                     "content": message[0]['content'],
+                    "probabilities": response.logprobs,
                     "response": response.content,
                     "target": target,
                     "extra": extra,
                 }
-                # print("output:",output)
             
                 responses.append(output)
 

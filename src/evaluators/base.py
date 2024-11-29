@@ -58,15 +58,14 @@ class BaseEvaluator(ABC):
         Return:
             results
         """
-        # XXX: tentitive implementation
-        processed_preds, processed_labels, processed_extras = self.process(preds, labels, extras)
+        processed_preds, processed_adlabels, preds_probabilities = self.process(preds, labels, extras)
         # results = {}
 
         # for metrics_id, kwargs in self.metrics_cfg.items():
         #     metrics_fn = _supported_metrics[metrics_id]
         #     results[metrics_id] = metrics_fn(processed_labels, processed_preds, **kwargs)
         
-        return {"processed_preds": processed_preds}
+        return {"processed_preds": processed_preds, "preds_probabilities": preds_probabilities} 
     
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.eval(*args, **kwds)

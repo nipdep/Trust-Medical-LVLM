@@ -76,7 +76,8 @@ class Mimic(BaseDataset):
         extra_ = {
             "gender": anno["gender"],
             "age": anno["age"],
-            "race": anno["race"]
+            "race": anno["race"],
+            "id_": anno["id"]
         }
 
         if self.dataset_id == "mimic":
@@ -137,7 +138,7 @@ class MimicCombinator(Mimic):
                     entry["gender"] = gender
                     entry["race"] = race
                     # Format the entry as per the template
-                    dataSample = self.template_format(entry)
+                    dataSample = self.template_format(entry.copy())
                     # Check if image path exists, then append the sample
                     if os.path.exists(dataSample.image_path):
                         dataset.append(dataSample)

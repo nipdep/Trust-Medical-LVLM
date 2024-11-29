@@ -4,7 +4,7 @@ from src.grader.metrics import *
 
 
 class OpenEndGrader:
-    def __init__(self, y_pred, gender, race):
+    def __init__(self, y_pred, pred_proba, gender, race):
         """
         Initialize with predictions and group labels for gender and race.
 
@@ -14,6 +14,7 @@ class OpenEndGrader:
         - race (list or pd.Series): Race group for each sample.
         """
         self.y_pred = pd.Series(y_pred)
+        self.pred_proba = pd.Series(pred_proba)
         self.gender = pd.Series(gender)
         self.race = pd.Series(race)
 
@@ -107,7 +108,7 @@ class OpenEndGrader:
             # Create a binary mask for the pair of groups (1 for group1, 0 for group2)
             group_mask = [
                 1 if g == group1 else 0 for g in self.race if g in {group1, group2}]
-            pred_masked = [p for p, g in zip(self.y_pred, self.race) if g in {
+            pred_masked = [p for p, g in zip(self.pred_proba, self.race) if g in {
                 group1, group2}]
 
             # Perform the t-test using the generic_t_test method
@@ -126,7 +127,7 @@ class OpenEndGrader:
             # Create a binary mask for the pair of groups (1 for group1, 0 for group2)
             group_mask = [
                 1 if g == group1 else 0 for g in self.gender if g in {group1, group2}]
-            pred_masked = [p for p, g in zip(self.y_pred, self.gender) if g in {
+            pred_masked = [p for p, g in zip(self.pred_proba, self.gender) if g in {
                 group1, group2}]
 
             # Perform the t-test using the generic_t_test method
@@ -150,8 +151,8 @@ class OpenEndGrader:
         - dict: Welch ANOVA results for gender and race groups.
         """
         results = {
-            'gender': manual_welch_anova(self.y_pred, self.gender),
-            'race': manual_welch_anova(self.y_pred, self.race)
+            'gender': manual_welch_anova(self.pred_proba, self.gender),
+            'race': manual_welch_anova(self.pred_proba, self.race)
         }
         return results
 
