@@ -9,7 +9,7 @@
 
 ### Dataset downloading
 1. mimic-cxr-jpg dataset
-> you could download subj-set of the `mimic-cxr-jpg` that used in this evaluation process.`
+> you could download subj-set of the `mimic-cxr-jpg` that used in this evaluation process [from here](https://rpiexchange-my.sharepoint.com/:u:/g/personal/pathin_rpi_edu/EX8g0PPno09GtzNA5fiTP7YBDqzRC_XYA2xGGEf9IUwryg?e=Mub3OW)`
 
 ### Model downloading
 * Most of the model are downloaded from the `hugging-face` library, therefore setup huggingface CLI, following [this link](https://huggingface.co/docs/huggingface_hub/en/guides/cli)
